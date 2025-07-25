@@ -3,7 +3,7 @@
 A clean, modular, high-performance proxy server for Google AI Studio, now powered by FastAPI. This version is a migration from the original Flask-based application, enhancing performance and maintainability.
 
 ## ✨ Acknowledgements
-This project was originally written in Flask by **Sophiamccarty**. This version is a direct migration to FastAPI to improve performance and leverage modern Python async capabilities.
+This project was originally written in Flask by [**Sophiamccarty & Eslezer ❤️**](https://colab.research.google.com/drive/13xEzZjlxJb7P6ro1akrq-UAhuUDgbC2A?usp=sharing). This version is a direct migration to FastAPI to improve performance and leverage modern Python async capabilities.
 
 ## 🚀 Quick Start
 
