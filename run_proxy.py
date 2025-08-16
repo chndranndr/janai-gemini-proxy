@@ -34,7 +34,7 @@ Examples:
     parser.add_argument(
         "--model",
         type=str,
-        help="Google AI model to use (e.g., gemini-2.5-flash, gemini-2.5-pro)"
+        help="AI model to use (Google: gemini-2.5-flash, Cerebras: llama3-8b)"
     )
     
     parser.add_argument(
@@ -42,6 +42,14 @@ Examples:
         type=str,
         choices=["ngrok", "cloudflare", "localtunnel"],
         help="Tunnel provider to use"
+    )
+    
+    parser.add_argument(
+        "--ai-provider",
+        type=str,
+        choices=["google", "cerebras"],
+        default="google",
+        help="AI provider to use (google or cerebras)"
     )
     
     parser.add_argument(
@@ -73,12 +81,19 @@ def setup_environment(args):
     if args.tunnel:
         config.set("tunnel_provider", args.tunnel.capitalize())
     
+    if args.ai_provider:
+        config.set("ai_provider", args.ai_provider)
+    
     if args.config and os.path.exists(args.config):
         import json
         with open(args.config, 'r') as f:
             custom_config = json.load(f)
             for key, value in custom_config.items():
                 config.set(key, value)
+    
+    # Validate AI provider after setup
+    if config.get("ai_provider") not in ["google", "cerebras"]:
+        raise ValueError("AI provider must be 'google' or 'cerebras'")
 
 def print_banner():
     """Print startup banner"""

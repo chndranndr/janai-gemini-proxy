@@ -14,6 +14,7 @@ from typing import Dict, Any, List
 from config.settings import config
 from config.constants import DEFAULT_MODEL
 from ai.client import initialize_google_ai_client, get_google_ai_client
+from ai.cerebras_client import initialize_cerebras_ai_client, get_cerebras_ai_client
 from tunnel.manager import tunnel_manager
 from content.lorebook import lorebook_manager
 from content.text_processing import (
@@ -55,16 +56,23 @@ app = create_app()
 from dotenv import load_dotenv
 
 load_dotenv()
-# Initialize Google AI client with environment variable
-api_key = os.getenv("GOOGLE_AI_API_KEY", "")
+
+# Initialize AI client based on provider
+ai_provider = config.get("ai_provider")
+api_key_env = "GOOGLE_AI_API_KEY" if ai_provider == "google" else "CEREBRAS_API_KEY"
+api_key = os.getenv(api_key_env, "")
+
 if api_key:
     try:
-        initialize_google_ai_client(api_key)
-        logger.info("Google AI client initialized successfully")
+        if ai_provider == "google":
+            initialize_google_ai_client(api_key)
+        else:
+            initialize_cerebras_ai_client(api_key)
+        logger.info(f"{ai_provider.capitalize()} AI client initialized successfully")
     except Exception as e:
-        logger.error(f"Failed to initialize Google AI client: {e}")
+        logger.error(f"Failed to initialize {ai_provider} AI client: {e}")
 else:
-    logger.error("GOOGLE_AI_API_KEY not found in environment variables")
+    logger.error(f"{ai_provider.upper()}_API_KEY not found in environment variables")
 
 @app.post('/v1/chat/completions')
 async def chat_completions(request: Request):
@@ -105,13 +113,17 @@ async def chat_completions(request: Request):
         processed_messages = process_messages(messages)
         logger.info(f"Processed messages: {json.dumps(processed_messages, indent=2)}")
 
-        # Get Google AI client
+        # Get AI client based on provider
+        ai_provider = config.get("ai_provider")
         try:
-            client = get_google_ai_client()
-            logger.info("Google AI client retrieved successfully")
+            if ai_provider == "google":
+                client = get_google_ai_client()
+            else:
+                client = get_cerebras_ai_client()
+            logger.info(f"{ai_provider.capitalize()} AI client retrieved successfully")
         except Exception as e:
-            logger.error(f"Failed to get Google AI client: {e}")
-            return JSONResponse(content={"error": {"message": f"Google AI client error: {str(e)}"}}, status_code=500)
+            logger.error(f"Failed to get {ai_provider} AI client: {e}")
+            return JSONResponse(content={"error": {"message": f"{ai_provider} AI client error: {str(e)}"}}, status_code=500)
 
         # Generate response
         logger.info("Generating response...")
@@ -208,7 +220,9 @@ async def handle_standard_response(client, model: str, messages: List[Dict[str, 
     logger.info("Handling standard response")
 
     try:
-        logger.info(f"Calling Google AI with model: {model}")
+        logger.info(f"Calling {ai_provider.capitalize()} AI with model: {model}")
+        logger.info(f"Generate content: {messages}")
+
         response = client.generate_content(
             model=model,
             messages=messages,
@@ -218,6 +232,8 @@ async def handle_standard_response(client, model: str, messages: List[Dict[str, 
 
         content = response.text or ""
         logger.info(f"Received response, content length: {len(content)}")
+        logger.info(f"Response content: {content}")
+
 
         # Apply post-processing
         logger.info("Applying post-processing...")

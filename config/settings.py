@@ -8,13 +8,14 @@ from typing import Dict, Any, List
 
 # Default configuration values
 DEFAULT_CONFIG = {
-    "tunnel_provider": "Ngrok",
+    "ai_provider": "google",  # Default provider selection
+    "tunnel_provider": "Cloudflare",
     "ngrok_token": "",
     "model": "gemini-2.5-flash",
     "top_p": 0.9,
     "top_k": 45,
     "enable_jailbreak": True,
-    "bypass_level": "strong",
+    "bypass_level": "extreme",
     "enable_ooc_injection": True,
     "enable_markdown_check": True,
     "enable_force_thinking": False,
@@ -38,6 +39,26 @@ class Config:
     def __init__(self):
         self._config = DEFAULT_CONFIG.copy()
         self._load_from_env()
+        
+        # Add AI provider-specific validation
+        if self.get("ai_provider") not in ["google", "cerebras"]:
+            raise ValueError("AI provider must be 'google' or 'cerebras'")
+    
+    def _load_from_env(self):
+        """Load configuration from environment variables"""
+        for key in self._config:
+            env_value = os.getenv(f"PROXY_{key.upper()}")
+            if env_value is not None:
+                # Type conversion based on default value type
+                default_type = type(self._config[key])
+                if default_type == bool:
+                    self._config[key] = env_value.lower() in ('true', '1', 'yes', 'on')
+                elif default_type == int:
+                    self._config[key] = int(env_value)
+                elif default_type == float:
+                    self._config[key] = float(env_value)
+                else:
+                    self._config[key] = env_value
     
     def _load_from_env(self):
         """Load configuration from environment variables"""
